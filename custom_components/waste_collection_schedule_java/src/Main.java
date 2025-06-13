@@ -1,18 +1,38 @@
 package waste_collection_schedule_java;
 
-import java.time.LocalDateTime;
+import java.io.StringReader;
+import java.time.LocalDate;
+import java.util.List;
 
+/** Demonstration entry point for the Java port. */
 public class Main {
     public static void main(String[] args) {
-        WasteCollectionCalendar cal = new WasteCollectionCalendar();
-        cal.addCollection(LocalDateTime.now().plusDays(1), "Restmüll");
-        cal.addCollection(LocalDateTime.now().plusDays(7), "Papier");
+        // Example ICS data with two events
+        String icsData = """
+BEGIN:VCALENDAR
+BEGIN:VEVENT
+DTSTART;VALUE=DATE:20240101
+SUMMARY:Restmuell
+END:VEVENT
+BEGIN:VEVENT
+DTSTART;VALUE=DATE:20240107
+SUMMARY:Papier
+END:VEVENT
+END:VCALENDAR
+""";
 
-        WasteCollectionCalendar.Collection next = cal.getNextCollection();
-        if (next != null) {
-            System.out.println("Next collection: " + next.type + " in " + next.daysUntil() + " days");
-        } else {
-            System.out.println("No upcoming collection");
+        // Create a source from ICS data
+        ICSSource source = new ICSSource(new StringReader(icsData));
+        SourceShell shell = new SourceShell(source);
+        shell.fetch();
+
+        // Aggregate and query
+        CollectionAggregator agg = new CollectionAggregator();
+        agg.addShell(shell);
+
+        List<Collection> upcoming = agg.getUpcoming(5, null, null);
+        for (Collection c : upcoming) {
+            System.out.println(c.getDate() + " - " + c.getType());
         }
     }
 }
